@@ -136,17 +136,25 @@ class RedIQSimulator:
 
     def _calculate_irr(self, cash_flows):
         # Simple bisection method
-        low, high, eps = -1.0, 10.0, 1e-5
+        low, high, eps = -0.999999, 10.0, 1e-5
+        npv_low = self._calculate_npv(low, cash_flows)
+        npv_high = self._calculate_npv(high, cash_flows)
+        if npv_low * npv_high > 0:
+            raise ValueError("IRR not bracketed in search interval")
         while high - low > eps:
             mid = (low + high) / 2
             npv = self._calculate_npv(mid, cash_flows)
             if npv > 0:
                 low = mid
+                npv_low = npv
             else:
                 high = mid
+                npv_high = npv
         return (low + high) / 2
 
     def _calculate_npv(self, rate, cash_flows):
+        if rate <= -1:
+            raise ValueError("Rate must be greater than -1")
         return sum(cf / (1 + rate) ** t for t, cf in enumerate(cash_flows))
 
     def sensitivity_analysis(self, noi, cap_rates, growth_rates):
